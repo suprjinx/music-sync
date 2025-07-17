@@ -1,0 +1,53 @@
+name: Build Music Sync
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, windows-latest]
+    
+    runs-on: ${{ matrix.platform }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
+        cache: 'npm'
+    
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+    
+    - name: Install Linux dependencies
+      if: matrix.platform == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libwebkit2gtk-4.0-dev build-essential curl wget libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+    
+    - name: Install Node dependencies
+      run: npm install
+    
+    - name: Build app
+      run: npm run tauri build
+    
+    - name: Upload Linux binary
+      if: matrix.platform == 'ubuntu-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: music-sync-linux
+        path: src-tauri/target/release/music-sync
+    
+    - name: Upload Windows binary
+      if: matrix.platform == 'windows-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: music-sync-windows
+        path: src-tauri/target/release/music-sync.exe

@@ -1,0 +1,539 @@
+.app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #1a1a1a;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.app-header {
+  padding: 20px;
+  background: #2a2a2a;
+  border-bottom: 1px solid #444;
+}
+
+.app-header h1 {
+  margin: 0 0 20px 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.directory-controls {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 15px;
+}
+
+.directory-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.directory-selector label {
+  font-size: 12px;
+  color: #ccc;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.directory-button {
+  padding: 8px 16px;
+  background: #444;
+  border: 1px solid #666;
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  min-width: 200px;
+  text-align: left;
+}
+
+.directory-button:hover {
+  background: #555;
+}
+
+.selected-path {
+  margin-top: 5px;
+  font-size: 12px;
+  color: #999;
+  font-family: monospace;
+  padding: 4px 8px;
+  background: #222;
+  border-radius: 4px;
+  max-width: 400px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sync-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 10px 0;
+}
+
+.selection-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.selection-count {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.selection-size {
+  font-size: 12px;
+  color: #007acc;
+  font-weight: 600;
+}
+
+.sync-button {
+  padding: 8px 20px;
+  background: #007acc;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.sync-button:hover {
+  background: #0066aa;
+}
+
+.app-main {
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+}
+
+.loading, .empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #999;
+  font-size: 16px;
+}
+
+.sync-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  min-width: 300px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #333;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #007acc, #0099ff);
+  transition: width 0.3s ease;
+  border-radius: 4px;
+}
+
+.album-controls {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 15px 0;
+  border-bottom: 1px solid #444;
+  margin-bottom: 20px;
+}
+
+.search-section {
+  flex: 1;
+}
+
+.search-input {
+  width: 100%;
+  max-width: 400px;
+  padding: 8px 12px;
+  background: #333;
+  border: 1px solid #555;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #007acc;
+  box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.3);
+}
+
+.search-input::placeholder {
+  color: #888;
+}
+
+.sort-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sort-section label {
+  font-size: 14px;
+  color: #ccc;
+  white-space: nowrap;
+}
+
+.sort-select {
+  padding: 6px 10px;
+  background: #333;
+  border: 1px solid #555;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.sort-select:focus {
+  outline: none;
+  border-color: #007acc;
+}
+
+.sort-direction-btn {
+  padding: 6px 8px;
+  background: #444;
+  border: 1px solid #555;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+  min-width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sort-direction-btn:hover {
+  background: #555;
+}
+
+.sort-direction-btn:focus {
+  outline: none;
+  border-color: #007acc;
+}
+
+.filter-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-button {
+  padding: 6px 12px;
+  background: #444;
+  border: 1px solid #555;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.filter-button:hover {
+  background: #555;
+}
+
+.filter-button.active {
+  background: #007acc;
+  border-color: #007acc;
+}
+
+.filter-button:focus {
+  outline: none;
+  border-color: #007acc;
+}
+
+.album-count {
+  font-size: 14px;
+  color: #999;
+  white-space: nowrap;
+}
+
+.album-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+  padding: 20px 0;
+}
+
+.album-card {
+  background: #2a2a2a;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+  position: relative;
+}
+
+.album-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.album-card.synced {
+  border-color: #28a745;
+}
+
+.album-card.selected {
+  border-color: #007acc;
+  box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.3);
+}
+
+.album-cover {
+  position: relative;
+  aspect-ratio: 1;
+  background: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.album-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.no-cover {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #666;
+  font-size: 48px;
+}
+
+.synced-badge, .selected-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  color: white;
+}
+
+.synced-badge {
+  background: #28a745;
+}
+
+.selected-badge {
+  background: #007acc;
+}
+
+.album-info {
+  padding: 12px;
+}
+
+.artist-name {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #fff;
+}
+
+.album-name {
+  font-size: 13px;
+  color: #ccc;
+  margin-bottom: 8px;
+}
+
+.album-stats {
+  font-size: 11px;
+  color: #888;
+}
+
+/* Global styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Directory Chooser Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #2a2a2a;
+  border-radius: 8px;
+  width: 600px;
+  max-width: 90vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #444;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #444;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 18px;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: #ccc;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  color: #fff;
+}
+
+.modal-body {
+  padding: 20px;
+  flex: 1;
+  overflow: auto;
+}
+
+.current-path {
+  margin-bottom: 20px;
+  padding: 10px;
+  background: #333;
+  border-radius: 4px;
+  color: #ccc;
+  font-size: 14px;
+}
+
+.drives-section h4 {
+  margin: 0 0 10px 0;
+  color: #fff;
+  font-size: 16px;
+}
+
+.drives-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drive-item {
+  padding: 12px;
+  background: #444;
+  border: 1px solid #666;
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  text-align: left;
+  transition: background 0.2s;
+}
+
+.drive-item:hover {
+  background: #555;
+}
+
+.directory-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.nav-button {
+  padding: 8px 16px;
+  background: #007acc;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.nav-button:hover {
+  background: #0066aa;
+}
+
+.directory-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.directory-item {
+  padding: 8px 12px;
+  background: #333;
+  border: 1px solid #555;
+  border-radius: 4px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  text-align: left;
+  transition: background 0.2s;
+}
+
+.directory-item:hover:not(:disabled) {
+  background: #444;
+}
+
+.directory-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.directory-item.directory {
+  font-weight: 500;
+}
+
+.directory-item.file {
+  color: #999;
+}

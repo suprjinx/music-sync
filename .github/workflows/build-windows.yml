@@ -1,0 +1,55 @@
+name: Build Windows Executable
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
+        cache: 'npm'
+    
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: x86_64-pc-windows-msvc
+    
+    - name: Install Node dependencies
+      run: npm install
+    
+    - name: Build frontend
+      run: npm run build
+    
+    - name: Build Windows executable
+      run: |
+        cd src-tauri
+        cargo build --release --target x86_64-pc-windows-msvc
+    
+    - name: Create dist folder and copy executable
+      run: |
+        mkdir dist
+        copy src-tauri\target\x86_64-pc-windows-msvc\release\music-sync.exe dist\
+    
+    - name: Upload Windows executable
+      uses: actions/upload-artifact@v4
+      with:
+        name: music-sync-windows
+        path: dist/music-sync.exe
+        retention-days: 30
+    
+    - name: Display file info
+      run: |
+        echo "Windows executable built successfully:"
+        dir dist
+        echo "File size:"
+        powershell -Command "Get-Item dist\music-sync.exe | Select-Object Name, Length"
