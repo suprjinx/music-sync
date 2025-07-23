@@ -1,7 +1,9 @@
 package main
 
 import (
+	"crypto/sha256"
 	"embed"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -11,6 +13,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 )
 
@@ -18,14 +21,15 @@ import (
 var staticFiles embed.FS
 
 type AlbumFolder struct {
-	Path      string  `json:"path"`
-	Name      string  `json:"name"`
-	Artist    string  `json:"artist"`
-	Album     string  `json:"album"`
-	Mp3Count  int     `json:"mp3_count"`
-	HasCover  bool    `json:"has_cover"`
-	SizeMB    float64 `json:"size_mb"`
-	IsSynced  bool    `json:"is_synced"`
+	Path        string  `json:"path"`
+	Name        string  `json:"name"`
+	Artist      string  `json:"artist"`
+	Album       string  `json:"album"`
+	Mp3Count    int     `json:"mp3_count"`
+	HasCover    bool    `json:"has_cover"`
+	SizeMB      float64 `json:"size_mb"`
+	IsSynced    bool    `json:"is_synced"`
+	Fingerprint string  `json:"fingerprint"`
 }
 
 type DirectoryItem struct {
@@ -35,11 +39,15 @@ type DirectoryItem struct {
 }
 
 type Server struct {
-	port string
+	port             string
+	fingerprintCache map[string]string
 }
 
 func main() {
-	server := &Server{port: "8080"}
+	server := &Server{
+		port:             "8080",
+		fingerprintCache: make(map[string]string),
+	}
 	
 	// Print URL to console
 	fmt.Printf("🎵 Music Sync Server starting...\n")
@@ -113,7 +121,7 @@ func (s *Server) handleScan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	albums := scanMusicFolders(req.Directory)
+	albums := s.scanMusicFolders(req.Directory)
 	
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(albums)
@@ -170,7 +178,7 @@ func (s *Server) handleCheckSync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	isSynced := checkSyncStatus(req.SourcePath, req.TargetDirectory)
+	isSynced := s.checkSyncStatus(req.SourcePath, req.TargetDirectory)
 	
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]bool{"synced": isSynced})
@@ -253,7 +261,7 @@ func (s *Server) handleCover(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, coverPath)
 }
 
-func scanMusicFolders(directory string) []AlbumFolder {
+func (s *Server) scanMusicFolders(directory string) []AlbumFolder {
 	var albums []AlbumFolder
 	
 	err := filepath.WalkDir(directory, func(path string, d fs.DirEntry, err error) error {
@@ -290,15 +298,19 @@ func scanMusicFolders(directory string) []AlbumFolder {
 				// Calculate folder size
 				sizeMB := calculateFolderSize(path)
 				
+				// Generate fingerprint
+				fingerprint := s.generateFolderFingerprint(path)
+				
 				albums = append(albums, AlbumFolder{
-					Path:     path,
-					Name:     folderName,
-					Artist:   artist,
-					Album:    album,
-					Mp3Count: mp3Count,
-					HasCover: hasCover,
-					SizeMB:   sizeMB,
-					IsSynced: false,
+					Path:        path,
+					Name:        folderName,
+					Artist:      artist,
+					Album:       album,
+					Mp3Count:    mp3Count,
+					HasCover:    hasCover,
+					SizeMB:      sizeMB,
+					IsSynced:    false,
+					Fingerprint: fingerprint,
 				})
 			}
 		}
@@ -334,14 +346,70 @@ func getDrives() []string {
 	return drives
 }
 
-func checkSyncStatus(sourcePath, targetDirectory string) bool {
-	folderName := filepath.Base(sourcePath)
-	targetPath := filepath.Join(targetDirectory, folderName)
-	
-	if _, err := os.Stat(targetPath); err == nil {
-		return true
+func (s *Server) generateFolderFingerprint(folderPath string) string {
+	// Check cache first
+	if fingerprint, exists := s.fingerprintCache[folderPath]; exists {
+		return fingerprint
 	}
-	return false
+	
+	folderName := filepath.Base(folderPath)
+	
+	// Get list of files in the folder
+	entries, err := os.ReadDir(folderPath)
+	if err != nil {
+		return ""
+	}
+	
+	var files []string
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			files = append(files, entry.Name())
+		}
+	}
+	
+	// Sort files for consistent fingerprint
+	sort.Strings(files)
+	
+	// Create fingerprint from folder name and file list
+	fingerprintData := folderName + "|" + strings.Join(files, "|")
+	
+	// Generate SHA256 hash
+	hash := sha256.Sum256([]byte(fingerprintData))
+	fingerprint := hex.EncodeToString(hash[:])
+	
+	// Cache the result
+	s.fingerprintCache[folderPath] = fingerprint
+	
+	return fingerprint
+}
+
+func (s *Server) findFolderByFingerprint(targetDirectory, fingerprint string) string {
+	entries, err := os.ReadDir(targetDirectory)
+	if err != nil {
+		return ""
+	}
+	
+	for _, entry := range entries {
+		if entry.IsDir() {
+			folderPath := filepath.Join(targetDirectory, entry.Name())
+			if s.generateFolderFingerprint(folderPath) == fingerprint {
+				return folderPath
+			}
+		}
+	}
+	
+	return ""
+}
+
+func (s *Server) checkSyncStatus(sourcePath, targetDirectory string) bool {
+	sourceFingerprint := s.generateFolderFingerprint(sourcePath)
+	if sourceFingerprint == "" {
+		return false
+	}
+	
+	// Check if a folder with the same fingerprint exists in target directory
+	matchingFolder := s.findFolderByFingerprint(targetDirectory, sourceFingerprint)
+	return matchingFolder != ""
 }
 
 func syncAlbum(sourcePath, targetDirectory string) (string, error) {

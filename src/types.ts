@@ -7,4 +7,5 @@ export interface AlbumFolder {
   has_cover: boolean;
   size_mb: number;
   is_synced: boolean;
+  fingerprint: string;
 }
