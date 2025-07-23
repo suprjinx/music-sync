@@ -3,6 +3,23 @@ import AlbumGrid from "./components/AlbumGrid";
 import DirectoryChooser from "./components/DirectoryChooser";
 import { AlbumFolder } from "./types";
 
+// Utility function to process items with limited concurrency
+async function processConcurrentlyLimited<T, R>(
+  items: T[],
+  processor: (item: T) => Promise<R>,
+  concurrencyLimit: number = 5
+): Promise<R[]> {
+  const results: R[] = [];
+  
+  for (let i = 0; i < items.length; i += concurrencyLimit) {
+    const batch = items.slice(i, i + concurrencyLimit);
+    const batchResults = await Promise.all(batch.map(processor));
+    results.push(...batchResults);
+  }
+  
+  return results;
+}
+
 function App() {
   const [albums, setAlbums] = useState<AlbumFolder[]>([]);
   const [loading, setLoading] = useState(false);
@@ -109,25 +126,32 @@ function App() {
       
       // Check sync status for each album if target directory is selected
       if (targetDirectory) {
-        const updatedAlbums = await Promise.all(
-          scannedAlbums.map(async (album) => {
-            const syncResponse = await fetch('/api/check-sync', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                sourcePath: album.path,
-                targetDirectory,
-              }),
-            });
-            
-            if (syncResponse.ok) {
-              const syncData = await syncResponse.json();
-              return { ...album, is_synced: syncData.synced };
+        const updatedAlbums = await processConcurrentlyLimited(
+          scannedAlbums,
+          async (album) => {
+            try {
+              const syncResponse = await fetch('/api/check-sync', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  sourcePath: album.path,
+                  targetDirectory,
+                }),
+              });
+              
+              if (syncResponse.ok) {
+                const syncData = await syncResponse.json();
+                return { ...album, is_synced: syncData.synced };
+              }
+              return album;
+            } catch (error) {
+              console.warn(`Failed to check sync status for ${album.name}:`, error);
+              return album;
             }
-            return album;
-          })
+          },
+          5 // Limit to 5 concurrent requests
         );
         setAlbums(updatedAlbums);
       } else {
