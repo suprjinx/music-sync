@@ -15,6 +15,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"sync"
 )
 
 //go:embed dist/*
@@ -41,6 +42,7 @@ type DirectoryItem struct {
 type Server struct {
 	port             string
 	fingerprintCache map[string]string
+	cacheMutex       sync.RWMutex
 }
 
 func main() {
@@ -347,10 +349,13 @@ func getDrives() []string {
 }
 
 func (s *Server) generateFolderFingerprint(folderPath string) string {
-	// Check cache first
+	// Check cache first (read lock)
+	s.cacheMutex.RLock()
 	if fingerprint, exists := s.fingerprintCache[folderPath]; exists {
+		s.cacheMutex.RUnlock()
 		return fingerprint
 	}
+	s.cacheMutex.RUnlock()
 	
 	folderName := filepath.Base(folderPath)
 	
@@ -377,8 +382,10 @@ func (s *Server) generateFolderFingerprint(folderPath string) string {
 	hash := sha256.Sum256([]byte(fingerprintData))
 	fingerprint := hex.EncodeToString(hash[:])
 	
-	// Cache the result
+	// Cache the result (write lock)
+	s.cacheMutex.Lock()
 	s.fingerprintCache[folderPath] = fingerprint
+	s.cacheMutex.Unlock()
 	
 	return fingerprint
 }
