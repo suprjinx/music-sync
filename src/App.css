@@ -537,3 +537,110 @@ body {
 .directory-item.file {
   color: #999;
 }
+/* Notification Modal Styles */
+.notification-modal {
+  position: relative;
+  background: #2a2a2a;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow: hidden;
+  border: 1px solid #444;
+}
+
+.notification-header {
+  display: flex;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #444;
+  gap: 12px;
+}
+
+.notification-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.notification-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  flex: 1;
+}
+
+.notification-content {
+  padding: 20px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.notification-message {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: inherit;
+  line-height: 1.5;
+  color: #e0e0e0;
+}
+
+.notification-footer {
+  padding: 20px;
+  border-top: 1px solid #444;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.notification-ok-button {
+  padding: 10px 24px;
+  background: #007acc;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.notification-ok-button:hover {
+  background: #005a9e;
+}
+
+/* Notification type variants */
+.notification-success .notification-header {
+  border-bottom-color: #28a745;
+}
+
+.notification-success .notification-ok-button {
+  background: #28a745;
+}
+
+.notification-success .notification-ok-button:hover {
+  background: #1e7e34;
+}
+
+.notification-warning .notification-header {
+  border-bottom-color: #ffc107;
+}
+
+.notification-warning .notification-ok-button {
+  background: #ffc107;
+  color: #000;
+}
+
+.notification-warning .notification-ok-button:hover {
+  background: #e0a800;
+}
+
+.notification-error .notification-header {
+  border-bottom-color: #dc3545;
+}
+
+.notification-error .notification-ok-button {
+  background: #dc3545;
+}
+
+.notification-error .notification-ok-button:hover {
+  background: #c82333;
+}

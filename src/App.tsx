@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import AlbumGrid from "./components/AlbumGrid";
 import DirectoryChooser from "./components/DirectoryChooser";
+import NotificationModal from "./components/NotificationModal";
 import { AlbumFolder, AppSettings } from "./types";
 
 // Utility function to process items with limited concurrency
@@ -60,6 +61,30 @@ function App() {
   const [sortBy, setSortBy] = useState<"artist" | "album" | "date">("artist");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [showOnlyOnTarget, setShowOnlyOnTarget] = useState(false);
+  const [notification, setNotification] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: "info" | "success" | "warning" | "error";
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "info",
+  });
+
+  const showNotification = (title: string, message: string, type: "info" | "success" | "warning" | "error" = "info") => {
+    setNotification({
+      isOpen: true,
+      title,
+      message,
+      type,
+    });
+  };
+
+  const closeNotification = () => {
+    setNotification(prev => ({ ...prev, isOpen: false }));
+  };
 
   // Load settings on component mount
   useEffect(() => {
@@ -233,7 +258,7 @@ function App() {
 
   const syncSelectedAlbums = async () => {
     if (!targetDirectory) {
-      alert("Please select a target directory first");
+      showNotification("Target Directory Required", "Please select a target directory first", "warning");
       return;
     }
 
@@ -309,7 +334,7 @@ function App() {
     
     // Show summary
     const summary = `Sync Complete!\n\n${syncedCount} albums added to target\n${unsyncedCount} albums removed from target\n\nDetails:\n${results.join('\n')}`;
-    alert(summary);
+    showNotification("Sync Complete", summary, "success");
   };
 
   return (
@@ -439,6 +464,14 @@ function App() {
         onClose={() => setShowTargetChooser(false)}
         onSelect={handleTargetDirectorySelect}
         title="Select Target Directory"
+      />
+      
+      <NotificationModal
+        isOpen={notification.isOpen}
+        onClose={closeNotification}
+        title={notification.title}
+        message={notification.message}
+        type={notification.type}
       />
     </div>
   );
