@@ -9,3 +9,8 @@ export interface AlbumFolder {
   is_synced: boolean;
   fingerprint: string;
 }
+
+export interface AppSettings {
+  lastSourceDirectory: string;
+  lastTargetDirectory: string;
+}

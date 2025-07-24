@@ -39,16 +39,32 @@ type DirectoryItem struct {
 	IsDirectory bool   `json:"isDirectory"`
 }
 
+type AppSettings struct {
+	LastSourceDirectory string `json:"lastSourceDirectory"`
+	LastTargetDirectory string `json:"lastTargetDirectory"`
+}
+
 type Server struct {
 	port             string
 	fingerprintCache map[string]string
 	cacheMutex       sync.RWMutex
+	settingsFile     string
 }
 
 func main() {
+	// Get executable directory for settings file
+	execPath, err := os.Executable()
+	if err != nil {
+		log.Printf("Warning: Could not get executable path: %v", err)
+		execPath = "."
+	}
+	execDir := filepath.Dir(execPath)
+	settingsFile := filepath.Join(execDir, "music-sync-settings.json")
+	
 	server := &Server{
 		port:             "8080",
 		fingerprintCache: make(map[string]string),
+		settingsFile:     settingsFile,
 	}
 	
 	// Print URL to console
@@ -66,6 +82,7 @@ func main() {
 	http.HandleFunc("/api/sync", server.handleSync)
 	http.HandleFunc("/api/unsync", server.handleUnsync)
 	http.HandleFunc("/api/cover/", server.handleCover)
+	http.HandleFunc("/api/settings", server.handleSettings)
 	
 	// Serve static files (React build) from embedded files
 	distFS, err := fs.Sub(staticFiles, "dist")
@@ -582,4 +599,56 @@ func browseDirectory(path string) ([]DirectoryItem, error) {
 	}
 	
 	return items, nil
+}
+func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		settings := s.loadSettings()
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(settings)
+	case http.MethodPost:
+		var settings AppSettings
+		if err := json.NewDecoder(r.Body).Decode(&settings); err \!= nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if err := s.saveSettings(settings); err \!= nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"status": "saved"})
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func (s *Server) loadSettings() AppSettings {
+	var settings AppSettings
+	
+	data, err := os.ReadFile(s.settingsFile)
+	if err \!= nil {
+		// File does not exist or cannot be read, return empty settings
+		return settings
+	}
+	
+	if err := json.Unmarshal(data, &settings); err \!= nil {
+		log.Printf("Warning: Could not parse settings file: %v", err)
+		return AppSettings{} // Return empty settings on parse error
+	}
+	
+	return settings
+}
+
+func (s *Server) saveSettings(settings AppSettings) error {
+	data, err := json.MarshalIndent(settings, "", "  ")
+	if err \!= nil {
+		return fmt.Errorf("failed to marshal settings: %v", err)
+	}
+	
+	if err := os.WriteFile(s.settingsFile, data, 0644); err \!= nil {
+		return fmt.Errorf("failed to write settings file: %v", err)
+	}
+	
+	return nil
 }

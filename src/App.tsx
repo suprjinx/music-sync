@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import AlbumGrid from "./components/AlbumGrid";
 import DirectoryChooser from "./components/DirectoryChooser";
-import { AlbumFolder } from "./types";
+import { AlbumFolder, AppSettings } from "./types";
 
 // Utility function to process items with limited concurrency
 async function processConcurrentlyLimited<T, R>(
@@ -20,6 +20,33 @@ async function processConcurrentlyLimited<T, R>(
   return results;
 }
 
+// Settings functions
+async function loadSettings(): Promise<AppSettings> {
+  try {
+    const response = await fetch('/api/settings');
+    if (response.ok) {
+      return await response.json();
+    }
+  } catch (error) {
+    console.warn('Failed to load settings:', error);
+  }
+  return { lastSourceDirectory: '', lastTargetDirectory: '' };
+}
+
+async function saveSettings(settings: AppSettings): Promise<void> {
+  try {
+    await fetch('/api/settings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(settings),
+    });
+  } catch (error) {
+    console.warn('Failed to save settings:', error);
+  }
+}
+
 function App() {
   const [albums, setAlbums] = useState<AlbumFolder[]>([]);
   const [loading, setLoading] = useState(false);
@@ -34,6 +61,24 @@ function App() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [showOnlyOnTarget, setShowOnlyOnTarget] = useState(false);
 
+  // Load settings on component mount
+  useEffect(() => {
+    const initializeSettings = async () => {
+      const settings = await loadSettings();
+      if (settings.lastSourceDirectory) {
+        setSourceDirectory(settings.lastSourceDirectory);
+      }
+      if (settings.lastTargetDirectory) {
+        setTargetDirectory(settings.lastTargetDirectory);
+      }
+      // If both directories are set, automatically scan the source
+      if (settings.lastSourceDirectory && settings.lastTargetDirectory) {
+        scanMusicFolder(settings.lastSourceDirectory);
+      }
+    };
+    initializeSettings();
+  }, []);
+
   // Update sync status when target directory changes
   useEffect(() => {
     if (targetDirectory && sourceDirectory && albums.length > 0) {
@@ -41,13 +86,23 @@ function App() {
     }
   }, [targetDirectory]);
 
-  const handleSourceDirectorySelect = (path: string) => {
+  const handleSourceDirectorySelect = async (path: string) => {
     setSourceDirectory(path);
     scanMusicFolder(path);
+    // Save settings
+    await saveSettings({
+      lastSourceDirectory: path,
+      lastTargetDirectory: targetDirectory,
+    });
   };
 
-  const handleTargetDirectorySelect = (path: string) => {
+  const handleTargetDirectorySelect = async (path: string) => {
     setTargetDirectory(path);
+    // Save settings
+    await saveSettings({
+      lastSourceDirectory: sourceDirectory,
+      lastTargetDirectory: path,
+    });
   };
 
   // Filter and sort albums
