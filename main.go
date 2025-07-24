@@ -266,11 +266,9 @@ func (s *Server) handleCover(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// Construct cover image path
-	coverPath := filepath.Join(albumPath, "cover.jpg")
-	
-	// Check if file exists
-	if _, err := os.Stat(coverPath); os.IsNotExist(err) {
+	// Find cover image (check album directory and parent directory)
+	coverPath, found := findCoverImage(albumPath)
+	if !found {
 		http.Error(w, "Cover image not found", http.StatusNotFound)
 		return
 	}
@@ -307,12 +305,8 @@ func (s *Server) scanMusicFolders(directory string) []AlbumFolder {
 				parentFolderName := filepath.Base(filepath.Dir(path))
 				artist, album := parseArtistAndAlbum(parentFolderName, folderName)
 				
-				// Check for cover.jpg
-				coverPath := filepath.Join(path, "cover.jpg")
-				hasCover := false
-				if _, err := os.Stat(coverPath); err == nil {
-					hasCover = true
-				}
+				// Check for cover.jpg (in album directory or parent)
+				_, hasCover := findCoverImage(path)
 				
 				// Calculate folder size
 				sizeMB := calculateFolderSize(path)
@@ -600,6 +594,24 @@ func browseDirectory(path string) ([]DirectoryItem, error) {
 	
 	return items, nil
 }
+
+func findCoverImage(albumPath string) (string, bool) {
+	// First, check for cover.jpg in the album directory itself
+	coverPath := filepath.Join(albumPath, "cover.jpg")
+	if _, err := os.Stat(coverPath); err == nil {
+		return coverPath, true
+	}
+	
+	// If not found, check the parent directory
+	parentDir := filepath.Dir(albumPath)
+	parentCoverPath := filepath.Join(parentDir, "cover.jpg")
+	if _, err := os.Stat(parentCoverPath); err == nil {
+		return parentCoverPath, true
+	}
+	
+	return "", false
+}
+
 func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
