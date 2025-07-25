@@ -287,20 +287,35 @@ func (s *Server) scanMusicFolders(directory string) []AlbumFolder {
 		}
 		
 		if d.IsDir() && path != directory {
-			// Check if this directory contains MP3 files
+			// Check if this directory contains any audio files
+			audioCount := 0
 			mp3Count := 0
 			dirEntries, err := os.ReadDir(path)
 			if err != nil {
 				return nil
 			}
 			
+			audioExtensions := []string{".mp3", ".flac", ".m4a", ".aac", ".ogg", ".wav", ".wma"}
+			
 			for _, entry := range dirEntries {
-				if !entry.IsDir() && strings.HasSuffix(strings.ToLower(entry.Name()), ".mp3") {
-					mp3Count++
+				if !entry.IsDir() {
+					fileName := strings.ToLower(entry.Name())
+					if strings.HasSuffix(fileName, ".mp3") {
+						mp3Count++
+						audioCount++
+					} else {
+						for _, ext := range audioExtensions {
+							if strings.HasSuffix(fileName, ext) {
+								audioCount++
+								break
+							}
+						}
+					}
 				}
 			}
 			
-			if mp3Count > 0 {
+			// Include folder if it has any audio files
+			if audioCount > 0 {
 				folderName := filepath.Base(path)
 				parentFolderName := filepath.Base(filepath.Dir(path))
 				artist, album := parseArtistAndAlbum(parentFolderName, folderName)

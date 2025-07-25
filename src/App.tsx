@@ -61,6 +61,7 @@ function App() {
   const [sortBy, setSortBy] = useState<"artist" | "album" | "date">("artist");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [showOnlyOnTarget, setShowOnlyOnTarget] = useState(false);
+  const [mp3Only, setMp3Only] = useState(true);
   const [notification, setNotification] = useState<{
     isOpen: boolean;
     title: string;
@@ -134,10 +135,15 @@ function App() {
   const filteredAndSortedAlbums = React.useMemo(() => {
     let filtered = albums;
     
+    // Filter by MP3 only
+    if (mp3Only) {
+      filtered = filtered.filter(album => album.mp3_count > 0);
+    }
+    
     // Filter by search term
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
-      filtered = albums.filter(album => 
+      filtered = filtered.filter(album => 
         album.artist.toLowerCase().includes(term) ||
         album.album.toLowerCase().includes(term) ||
         album.name.toLowerCase().includes(term)
@@ -172,7 +178,7 @@ function App() {
     });
     
     return sorted;
-  }, [albums, searchTerm, sortBy, sortDirection, showOnlyOnTarget]);
+  }, [albums, searchTerm, sortBy, sortDirection, showOnlyOnTarget, mp3Only]);
 
   // Calculate selection stats
   const selectionStats = React.useMemo(() => {
@@ -427,6 +433,13 @@ function App() {
               </div>
               <div className="filter-section">
                 <button 
+                  onClick={() => setMp3Only(!mp3Only)}
+                  className={`filter-button ${mp3Only ? 'active' : ''}`}
+                  title="Show only albums with MP3 files"
+                >
+                  🎵 MP3 Only
+                </button>
+                <button 
                   onClick={() => setShowOnlyOnTarget(!showOnlyOnTarget)}
                   className={`filter-button ${showOnlyOnTarget ? 'active' : ''}`}
                   title="Show only albums that exist on target"
@@ -436,6 +449,7 @@ function App() {
               </div>
               <div className="album-count">
                 {filteredAndSortedAlbums.length} of {albums.length} albums
+                {mp3Only && ` (MP3 only)`}
                 {showOnlyOnTarget && ` (synced only)`}
               </div>
             </div>
